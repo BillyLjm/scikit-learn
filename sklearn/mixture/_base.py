@@ -272,7 +272,6 @@ class BaseMixture(DensityMixin, BaseEstimator, metaclass=ABCMeta):
 
                     change = lower_bound - prev_lower_bound
                     self._print_verbose_msg_iter_end(n_iter, change)
-
                     if abs(change) < self.tol:
                         converged = True
                         break
@@ -484,7 +483,7 @@ class BaseMixture(DensityMixin, BaseEstimator, metaclass=ABCMeta):
                     )
                 ]
             )
-        else:
+        elif self.covariance_type in ("diag", "spherical"):
             X = np.vstack(
                 [
                     mean
@@ -494,6 +493,17 @@ class BaseMixture(DensityMixin, BaseEstimator, metaclass=ABCMeta):
                         _convert_to_numpy(self.means_, xp),
                         _convert_to_numpy(self.covariances_, xp),
                         n_samples_comp,
+                    )
+                ]
+            )
+        elif self.covariance_type in ("tied-diag", "tied-spherical"):
+            X = np.vstack(
+                [
+                    mean
+                    + rng.standard_normal(size=(sample, n_features))
+                    * np.sqrt(self.covariances_)
+                    for (mean, sample) in zip(
+                        _convert_to_numpy(self.means_, xp), n_samples_comp
                     )
                 ]
             )
