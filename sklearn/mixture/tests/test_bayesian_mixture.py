@@ -17,7 +17,7 @@ from sklearn.utils._testing import (
     assert_array_equal,
 )
 
-COVARIANCE_TYPE = ["full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"]
+from .conftest import COVARIANCE_TYPE
 PRIOR_TYPE = ["dirichlet_process", "dirichlet_distribution"]
 
 

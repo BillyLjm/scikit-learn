@@ -46,7 +46,7 @@ from sklearn.utils._testing import (
 )
 from sklearn.utils.extmath import fast_logdet
 
-COVARIANCE_TYPE = ["full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"]
+from .conftest import COVARIANCE_TYPE
 
 
 def generate_data(
