@@ -265,97 +265,98 @@ def test_compare_covar_type():
     n_components = rand_data.n_components
 
     for prior_type in PRIOR_TYPE:
-        # Computation of the full_covariance
-        bgmm = BayesianGaussianMixture(
-            weight_concentration_prior_type=prior_type,
-            n_components=2 * n_components,
-            covariance_type="full",
-            max_iter=1,
-            random_state=0,
-            tol=1e-7,
-        )
-        bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
-        full_covariances = (
-            bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis, np.newaxis]
-        )
+        if "full" in COVARIANCE_TYPE:
+            # Computation of the full_covariance
+            bgmm = BayesianGaussianMixture(
+                weight_concentration_prior_type=prior_type,
+                n_components=2 * n_components,
+                covariance_type="full",
+                max_iter=1,
+                random_state=0,
+                tol=1e-7,
+            )
+            bgmm._check_parameters(X)
+            bgmm._initialize_parameters(X, np.random.RandomState(0))
+            full_covariances = (
+                bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis, np.newaxis]
+            )
+        if "tied" in COVARIANCE_TYPE:
+            # Check tied_covariance = mean(full_covariances, 0)
+            bgmm = BayesianGaussianMixture(
+                weight_concentration_prior_type=prior_type,
+                n_components=2 * n_components,
+                covariance_type="tied",
+                max_iter=1,
+                random_state=0,
+                tol=1e-7,
+            )
+            bgmm._check_parameters(X)
+            bgmm._initialize_parameters(X, np.random.RandomState(0))
 
-        # Check tied_covariance = mean(full_covariances, 0)
-        bgmm = BayesianGaussianMixture(
-            weight_concentration_prior_type=prior_type,
-            n_components=2 * n_components,
-            covariance_type="tied",
-            max_iter=1,
-            random_state=0,
-            tol=1e-7,
-        )
-        bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
+            tied_covariance = bgmm.covariances_ * bgmm.degrees_of_freedom_
+            assert_almost_equal(tied_covariance, np.mean(full_covariances, 0))
+        if "diag" in COVARIANCE_TYPE:
+            # Check diag_covariance = diag(full_covariances)
+            bgmm = BayesianGaussianMixture(
+                weight_concentration_prior_type=prior_type,
+                n_components=2 * n_components,
+                covariance_type="diag",
+                max_iter=1,
+                random_state=0,
+                tol=1e-7,
+            )
+            bgmm._check_parameters(X)
+            bgmm._initialize_parameters(X, np.random.RandomState(0))
 
-        tied_covariance = bgmm.covariances_ * bgmm.degrees_of_freedom_
-        assert_almost_equal(tied_covariance, np.mean(full_covariances, 0))
+            diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis]
+            assert_almost_equal(
+                diag_covariances, np.array([np.diag(cov) for cov in full_covariances])
+            )
+        if "tied-diag" in COVARIANCE_TYPE:
+            # Check tied_diag_covariance = mean(diag_covariance, 0)
+            bgmm = BayesianGaussianMixture(
+                weight_concentration_prior_type=prior_type,
+                n_components=2 * n_components,
+                covariance_type="tied-diag",
+                max_iter=1,
+                random_state=0,
+                tol=1e-7,
+            )
+            bgmm._check_parameters(X)
+            bgmm._initialize_parameters(X, np.random.RandomState(0))
 
-        # Check diag_covariance = diag(full_covariances)
-        bgmm = BayesianGaussianMixture(
-            weight_concentration_prior_type=prior_type,
-            n_components=2 * n_components,
-            covariance_type="diag",
-            max_iter=1,
-            random_state=0,
-            tol=1e-7,
-        )
-        bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
+            tied_diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
+            assert_almost_equal(tied_diag_covariances, np.mean(diag_covariances, 0))
+        if "spherical" in COVARIANCE_TYPE:
+            # Check spherical_covariance = np.mean(diag_covariances, 1)
+            bgmm = BayesianGaussianMixture(
+                weight_concentration_prior_type=prior_type,
+                n_components=2 * n_components,
+                covariance_type="spherical",
+                max_iter=1,
+                random_state=0,
+                tol=1e-7,
+            )
+            bgmm._check_parameters(X)
+            bgmm._initialize_parameters(X, np.random.RandomState(0))
 
-        diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis]
-        assert_almost_equal(
-            diag_covariances, np.array([np.diag(cov) for cov in full_covariances])
-        )
+            spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
+            assert_almost_equal(spherical_covariances, np.mean(diag_covariances, 1))
+        if "tied-spherical" in COVARIANCE_TYPE:
+            # Check tied_spherical_covariance = np.mean(spherical_covariance, 0)
+            bgmm = BayesianGaussianMixture(
+                weight_concentration_prior_type=prior_type,
+                n_components=2 * n_components,
+                covariance_type="tied-spherical",
+                max_iter=1,
+                random_state=0,
+                tol=1e-7,
+            )
+            bgmm._check_parameters(X)
+            bgmm._initialize_parameters(X, np.random.RandomState(0))
 
-        # Check tied_diag_covariance = mean(diag_covariance, 0)
-        bgmm = BayesianGaussianMixture(
-            weight_concentration_prior_type=prior_type,
-            n_components=2 * n_components,
-            covariance_type="tied-diag",
-            max_iter=1,
-            random_state=0,
-            tol=1e-7,
-        )
-        bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
-
-        tied_diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
-        assert_almost_equal(tied_diag_covariances, np.mean(diag_covariances, 0))
-
-        # Check spherical_covariance = np.mean(diag_covariances, 1)
-        bgmm = BayesianGaussianMixture(
-            weight_concentration_prior_type=prior_type,
-            n_components=2 * n_components,
-            covariance_type="spherical",
-            max_iter=1,
-            random_state=0,
-            tol=1e-7,
-        )
-        bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
-
-        spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
-        assert_almost_equal(spherical_covariances, np.mean(diag_covariances, 1))
-
-        # Check tied_spherical_covariance = np.mean(spherical_covariance, 0)
-        bgmm = BayesianGaussianMixture(
-            weight_concentration_prior_type=prior_type,
-            n_components=2 * n_components,
-            covariance_type="tied-spherical",
-            max_iter=1,
-            random_state=0,
-            tol=1e-7,
-        )
-        bgmm._check_parameters(X)
-        bgmm._initialize_parameters(X, np.random.RandomState(0))
-
-        tied_spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
-        assert_almost_equal(tied_spherical_covariances, np.mean(spherical_covariances, 0))
+            tied_spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
+            assert_almost_equal(tied_spherical_covariances, np.mean(spherical_covariances, 0))
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
