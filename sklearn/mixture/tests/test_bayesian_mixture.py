@@ -17,7 +17,7 @@ from sklearn.utils._testing import (
     assert_array_equal,
 )
 
-COVARIANCE_TYPE = ["full", "tied", "diag", "spherical"]
+COVARIANCE_TYPE = ["full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"]
 PRIOR_TYPE = ["dirichlet_process", "dirichlet_distribution"]
 
 
@@ -144,11 +144,13 @@ def test_bayesian_mixture_precisions_prior_initialisation():
         "full": np.cov(X.T, bias=1) + 10,
         "tied": np.cov(X.T, bias=1) + 5,
         "diag": np.diag(np.atleast_2d(np.cov(X.T, bias=1))) + 3,
+        "tied-diag": np.diag(np.atleast_2d(np.cov(X.T, bias=1))) + 3,
         "spherical": rng.rand(),
+        "tied-spherical": rng.rand(),
     }
 
     bgmm = BayesianGaussianMixture(random_state=rng)
-    for cov_type in ["full", "tied", "diag", "spherical"]:
+    for cov_type in COVARIANCE_TYPE:
         bgmm.covariance_type = cov_type
         bgmm.covariance_prior = covariance_prior[cov_type]
         bgmm.fit(X)
@@ -159,11 +161,13 @@ def test_bayesian_mixture_precisions_prior_initialisation():
         "full": np.atleast_2d(np.cov(X.T)),
         "tied": np.atleast_2d(np.cov(X.T)),
         "diag": np.var(X, axis=0, ddof=1),
+        "tied-diag": np.var(X, axis=0, ddof=1),
         "spherical": np.var(X, axis=0, ddof=1).mean(),
+        "tied-spherical": np.var(X, axis=0, ddof=1).mean(),
     }
 
     bgmm = BayesianGaussianMixture(random_state=0)
-    for cov_type in ["full", "tied", "diag", "spherical"]:
+    for cov_type in COVARIANCE_TYPE:
         bgmm.covariance_type = cov_type
         bgmm.fit(X)
         assert_almost_equal(covariance_prior_default[cov_type], bgmm.covariance_prior_)
@@ -308,7 +312,22 @@ def test_compare_covar_type():
             diag_covariances, np.array([np.diag(cov) for cov in full_covariances])
         )
 
-        # Check spherical_covariance = np.mean(diag_covariances, 0)
+        # Check tied_diag_covariance = mean(diag_covariance, 0)
+        bgmm = BayesianGaussianMixture(
+            weight_concentration_prior_type=prior_type,
+            n_components=2 * n_components,
+            covariance_type="tied-diag",
+            max_iter=1,
+            random_state=0,
+            tol=1e-7,
+        )
+        bgmm._check_parameters(X)
+        bgmm._initialize_parameters(X, np.random.RandomState(0))
+
+        tied_diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
+        assert_almost_equal(tied_diag_covariances, np.mean(diag_covariances, 0))
+
+        # Check spherical_covariance = np.mean(diag_covariances, 1)
         bgmm = BayesianGaussianMixture(
             weight_concentration_prior_type=prior_type,
             n_components=2 * n_components,
@@ -322,6 +341,21 @@ def test_compare_covar_type():
 
         spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
         assert_almost_equal(spherical_covariances, np.mean(diag_covariances, 1))
+
+        # Check tied_spherical_covariance = np.mean(spherical_covariance, 0)
+        bgmm = BayesianGaussianMixture(
+            weight_concentration_prior_type=prior_type,
+            n_components=2 * n_components,
+            covariance_type="tied-spherical",
+            max_iter=1,
+            random_state=0,
+            tol=1e-7,
+        )
+        bgmm._check_parameters(X)
+        bgmm._initialize_parameters(X, np.random.RandomState(0))
+
+        tied_spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
+        assert_almost_equal(tied_spherical_covariances, np.mean(spherical_covariances, 0))
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
@@ -347,16 +381,22 @@ def test_check_covariance_precision():
             assert_almost_equal(
                 np.dot(bgmm.covariances_, bgmm.precisions_), np.eye(n_features)
             )
-
         elif covar_type == "diag":
             assert_almost_equal(
                 bgmm.covariances_ * bgmm.precisions_,
                 np.ones((n_components, n_features)),
             )
-
-        else:
+        elif covar_type == "tied-diag":
+            assert_almost_equal(
+                bgmm.covariances_ * bgmm.precisions_, np.ones(n_features)
+            )
+        elif covar_type == "spherical":
             assert_almost_equal(
                 bgmm.covariances_ * bgmm.precisions_, np.ones(n_components)
+            )
+        elif covar_type == "tied-spherical":
+            assert_almost_equal(
+                bgmm.covariances_ * bgmm.precisions_, np.ones(1)
             )
 
 
