@@ -363,9 +363,11 @@ class BayesianGaussianMixture(BaseMixture):
 
     _parameter_constraints: dict = {
         **BaseMixture._parameter_constraints,
-        "covariance_type": [StrOptions({
-            "full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"
-        })],
+        "covariance_type": [
+            StrOptions(
+                {"full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"}
+            )
+        ],
         "weight_concentration_prior_type": [
             StrOptions({"dirichlet_process", "dirichlet_distribution"})
         ],
@@ -641,7 +643,8 @@ class BayesianGaussianMixture(BaseMixture):
                 self.covariance_prior_
                 + sk[k] * nk[k]
                 + self.mean_precision_prior_
-                * nk[k] / self.mean_precision_[k]
+                * nk[k]
+                / self.mean_precision_[k]
                 * np.outer(diff, diff)
             )
 
@@ -672,9 +675,9 @@ class BayesianGaussianMixture(BaseMixture):
         self.covariances_ = (
             self.covariance_prior_
             + sk * nk.sum() / self.n_components
-            + self.mean_precision_prior_ / self.n_components
-            * np.dot((nk / self.mean_precision_)
-            * diff.T, diff)
+            + self.mean_precision_prior_
+            / self.n_components
+            * np.dot((nk / self.mean_precision_) * diff.T, diff)
         )
 
         # Contrary to the original bishop book, we normalize the covariances
@@ -702,8 +705,7 @@ class BayesianGaussianMixture(BaseMixture):
         self.covariances_ = (
             self.covariance_prior_
             + sk * nk[:, np.newaxis]
-            + (self.mean_precision_prior_
-            * nk / self.mean_precision_)[:, np.newaxis]
+            + (self.mean_precision_prior_ * nk / self.mean_precision_)[:, np.newaxis]
             * np.square(diff)
         )
 
@@ -734,9 +736,12 @@ class BayesianGaussianMixture(BaseMixture):
         self.covariances_ = (
             self.covariance_prior_
             + (sk * nk[:, np.newaxis]).sum(axis=0) / self.n_components
-            + (self.mean_precision_prior_  / self.n_components
-            * (nk / self.mean_precision_)[:, np.newaxis]
-            * np.square(diff)).sum(axis=0)
+            + (
+                self.mean_precision_prior_
+                / self.n_components
+                * (nk / self.mean_precision_)[:, np.newaxis]
+                * np.square(diff)
+            ).sum(axis=0)
         )
 
         # Contrary to the original bishop book, we normalize the covariances
@@ -765,7 +770,8 @@ class BayesianGaussianMixture(BaseMixture):
             self.covariance_prior_
             + sk * nk
             + self.mean_precision_prior_
-            * nk / self.mean_precision_
+            * nk
+            / self.mean_precision_
             * np.mean(np.square(diff), 1)
         )
 
@@ -796,9 +802,13 @@ class BayesianGaussianMixture(BaseMixture):
         self.covariances_ = (
             self.covariance_prior_
             + sk * nk.sum(axis=0) / self.n_components
-            + (self.mean_precision_prior_ / self.n_components
-            * nk / self.mean_precision_
-            * np.mean(np.square(diff), 1)).sum(axis=0)
+            + (
+                self.mean_precision_prior_
+                / self.n_components
+                * nk
+                / self.mean_precision_
+                * np.mean(np.square(diff), 1)
+            ).sum(axis=0)
         )
 
         # Contrary to the original bishop book, we normalize the covariances

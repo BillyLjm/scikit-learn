@@ -256,9 +256,8 @@ def _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar, xp=None):
     avg_X2 = (resp.T @ (X * X)) / nk[:, xp.newaxis]
     avg_means2 = means**2
     covariance = avg_X2 - avg_means2
-    covariance = np.where( # ignore float errors
-        np.abs(covariance) < 2 * xp.finfo(X.dtype).eps,
-        0, covariance
+    covariance = np.where(  # ignore float errors
+        np.abs(covariance) < 2 * xp.finfo(X.dtype).eps, 0, covariance
     )
     return covariance + reg_covar
 
@@ -284,11 +283,13 @@ def _estimate_gaussian_covariances_tied_diag(resp, X, nk, means, reg_covar, xp=N
         The tied covariance vector of the components.
     """
     xp, _ = get_namespace(X)
-    covariance = xp.sum(nk[:, None] *
-        _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar=0, xp=xp),
-        axis = 0
+    covariance = xp.sum(
+        nk[:, None]
+        * _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar=0, xp=xp),
+        axis=0,
     ) / xp.sum(nk)
     return covariance + reg_covar
+
 
 def _estimate_gaussian_covariances_spherical(resp, X, nk, means, reg_covar, xp=None):
     """Estimate the spherical variance values.
@@ -317,7 +318,9 @@ def _estimate_gaussian_covariances_spherical(resp, X, nk, means, reg_covar, xp=N
     )
 
 
-def _estimate_gaussian_covariances_tied_spherical(resp, X, nk, means, reg_covar, xp=None):
+def _estimate_gaussian_covariances_tied_spherical(
+    resp, X, nk, means, reg_covar, xp=None
+):
     """Estimate the tied-spherical variance values.
 
     Parameters
@@ -338,10 +341,16 @@ def _estimate_gaussian_covariances_tied_spherical(resp, X, nk, means, reg_covar,
         The variance value of the components.
     """
     xp, _ = get_namespace(X)
-    return xp.array([xp.mean(
-        _estimate_gaussian_covariances_tied_diag(resp, X, nk, means, reg_covar, xp=xp),
-        axis=0,
-    )])
+    return xp.array(
+        [
+            xp.mean(
+                _estimate_gaussian_covariances_tied_diag(
+                    resp, X, nk, means, reg_covar, xp=xp
+                ),
+                axis=0,
+            )
+        ]
+    )
 
 
 def _estimate_gaussian_parameters(X, resp, reg_covar, covariance_type, xp=None):
@@ -358,7 +367,8 @@ def _estimate_gaussian_parameters(X, resp, reg_covar, covariance_type, xp=None):
     reg_covar : float
         The regularization added to the diagonal of the covariance matrices.
 
-    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', 'tied-spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', \
+    'tied-spherical'}
         The type of precision matrices.
 
     Returns
@@ -396,7 +406,8 @@ def _compute_precision_cholesky(covariances, covariance_type, xp=None):
         The covariance matrix of the current components.
         The shape depends of the covariance_type.
 
-    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', 'tied-spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', \
+    'tied-spherical'}
         The type of precision matrices.
 
     Returns
@@ -483,7 +494,8 @@ def _compute_precision_cholesky_from_precisions(precisions, covariance_type, xp=
         The precision matrix of the current components.
         The shape depends on the covariance_type.
 
-    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', 'tied-spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', \
+    'tied-spherical'}
         The type of precision matrices.
 
     Returns
@@ -526,7 +538,8 @@ def _compute_log_det_cholesky(matrix_chol, covariance_type, n_features, xp=None)
         'spherical' : shape of (n_components,)
         'tied-spherical' : shape of (1,)
 
-    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', 'tied-spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', \
+    'tied-spherical'}
 
     n_features : int
         Number of features.
@@ -583,7 +596,8 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type, xp=N
         'spherical' : shape of (n_components,)
         'tied-spherical' : shape of (1,)
 
-    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', 'tied-spherical'}
+    covariance_type : {'full', 'tied', 'diag', 'tied-diag', 'spherical', \
+    'tied-spherical'}
 
     Returns
     -------
@@ -630,7 +644,7 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type, xp=N
             + (X**2 @ precisions.T)[:, None]
         )
 
-    elif covariance_type =="spherical":
+    elif covariance_type == "spherical":
         precisions = precisions_chol**2
         log_prob = (
             xp.sum(means**2, axis=1) * precisions
@@ -638,7 +652,7 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type, xp=N
             + xp.linalg.outer(row_norms(X, squared=True), precisions)
         )
 
-    elif covariance_type =="tied-spherical":
+    elif covariance_type == "tied-spherical":
         precisions = precisions_chol**2
         log_prob = (
             xp.sum(means**2, axis=1)[None, :] * precisions
@@ -869,9 +883,11 @@ class GaussianMixture(BaseMixture):
 
     _parameter_constraints: dict = {
         **BaseMixture._parameter_constraints,
-        "covariance_type": [StrOptions({
-            "full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"
-        })],
+        "covariance_type": [
+            StrOptions(
+                {"full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"}
+            )
+        ],
         "weights_init": ["array-like", None],
         "means_init": ["array-like", None],
         "precisions_init": ["array-like", None],

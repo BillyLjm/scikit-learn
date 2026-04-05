@@ -11,13 +11,13 @@ from sklearn.exceptions import NotFittedError
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.mixture import BayesianGaussianMixture
 from sklearn.mixture._bayesian_mixture import _log_dirichlet_norm, _log_wishart_norm
+from sklearn.mixture.tests.conftest import COVARIANCE_TYPE
 from sklearn.mixture.tests.test_gaussian_mixture import RandomData
 from sklearn.utils._testing import (
     assert_almost_equal,
     assert_array_equal,
 )
 
-from .conftest import COVARIANCE_TYPE
 PRIOR_TYPE = ["dirichlet_process", "dirichlet_distribution"]
 
 
@@ -308,7 +308,9 @@ def test_compare_covar_type():
             bgmm._check_parameters(X)
             bgmm._initialize_parameters(X, np.random.RandomState(0))
 
-            diag_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis]
+            diag_covariances = (
+                bgmm.covariances_ * bgmm.degrees_of_freedom_[:, np.newaxis]
+            )
             assert_almost_equal(
                 diag_covariances, np.array([np.diag(cov) for cov in full_covariances])
             )
@@ -356,7 +358,9 @@ def test_compare_covar_type():
             bgmm._initialize_parameters(X, np.random.RandomState(0))
 
             tied_spherical_covariances = bgmm.covariances_ * bgmm.degrees_of_freedom_
-            assert_almost_equal(tied_spherical_covariances, np.mean(spherical_covariances, 0))
+            assert_almost_equal(
+                tied_spherical_covariances, np.mean(spherical_covariances, 0)
+            )
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
@@ -396,9 +400,7 @@ def test_check_covariance_precision():
                 bgmm.covariances_ * bgmm.precisions_, np.ones(n_components)
             )
         elif covar_type == "tied-spherical":
-            assert_almost_equal(
-                bgmm.covariances_ * bgmm.precisions_, np.ones(1)
-            )
+            assert_almost_equal(bgmm.covariances_ * bgmm.precisions_, np.ones(1))
 
 
 def test_invariant_translation():

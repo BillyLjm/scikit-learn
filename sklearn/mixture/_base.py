@@ -505,7 +505,7 @@ class BaseMixture(DensityMixin, BaseEstimator, metaclass=ABCMeta):
                     + rng.standard_normal(size=(sample, n_features))
                     * np.sqrt(self.covariances_)
                     for (mean, sample) in zip(
-                        _convert_to_numpy(self.means_, xp), n_samples_comp
+                        move_to(self.means_, xp=np, device="cpu"), n_samples_comp
                     )
                 ]
             )

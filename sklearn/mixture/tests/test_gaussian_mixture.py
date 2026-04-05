@@ -28,7 +28,7 @@ from sklearn.mixture._gaussian_mixture import (
     _estimate_gaussian_parameters,
     _estimate_log_gaussian_prob,
 )
-
+from sklearn.mixture.tests.conftest import COVARIANCE_TYPE
 from sklearn.utils._array_api import (
     device as array_api_device,
 )
@@ -47,8 +47,6 @@ from sklearn.utils._testing import (
 )
 from sklearn.utils.extmath import fast_logdet
 
-from .conftest import COVARIANCE_TYPE
-
 
 def generate_data(
     n_samples, n_features, weights, means, precisions, covariance_type, dtype=np.float64
@@ -60,8 +58,9 @@ def generate_data(
         for _, (w, m) in enumerate(zip(weights, means)):
             X.append(
                 rng.multivariate_normal(
-                    m, precisions["tied-spherical"] * np.eye(n_features),
-                    int(np.round(w * n_samples))
+                    m,
+                    precisions["tied-spherical"] * np.eye(n_features),
+                    int(np.round(w * n_samples)),
                 ).astype(dtype)
             )
     elif covariance_type == "spherical":
@@ -330,6 +329,7 @@ def test_check_precisions():
         g.fit(X)
         assert_array_equal(rand_data.precisions[covar_type], g.precisions_init)
 
+
 def test_suffstat_sk(global_dtype):
     # compare the precision matrix computed with EmpiricalCovariance.covariance
 
@@ -386,12 +386,16 @@ def test_suffstat_sk(global_dtype):
             nk = resp.sum(axis=0)
             xk = np.dot(resp.T, X) / nk[:, np.newaxis]
 
-            covars_pred_full = gm._estimate_gaussian_covariances_full(resp, X, nk, xk, 0)
+            covars_pred_full = gm._estimate_gaussian_covariances_full(
+                resp, X, nk, xk, 0
+            )
             covars_pred_full = (
                 np.sum(nk[:, np.newaxis, np.newaxis] * covars_pred_full, 0) / n_samples
             )
 
-            covars_pred_tied = gm._estimate_gaussian_covariances_tied(resp, X, nk, xk, 0)
+            covars_pred_tied = gm._estimate_gaussian_covariances_tied(
+                resp, X, nk, xk, 0
+            )
 
             ecov = EmpiricalCovariance()
             ecov.covariance_ = covars_pred_full
@@ -414,8 +418,12 @@ def test_suffstat_sk(global_dtype):
             X = rng.rand(n_samples, n_features)
             nk = resp.sum(axis=0)
             xk = np.dot(resp.T, X) / nk[:, np.newaxis]
-            covars_pred_full = gm._estimate_gaussian_covariances_full(resp, X, nk, xk, 0)
-            covars_pred_diag = gm._estimate_gaussian_covariances_diag(resp, X, nk, xk, 0)
+            covars_pred_full = gm._estimate_gaussian_covariances_full(
+                resp, X, nk, xk, 0
+            )
+            covars_pred_diag = gm._estimate_gaussian_covariances_diag(
+                resp, X, nk, xk, 0
+            )
 
             ecov = EmpiricalCovariance()
             for cov_full, cov_diag in zip(covars_pred_full, covars_pred_diag):
@@ -438,8 +446,12 @@ def test_suffstat_sk(global_dtype):
             X = rng.rand(n_samples, n_features)
             nk = resp.sum(axis=0)
             xk = np.dot(resp.T, X) / nk[:, np.newaxis]
-            covars_pred_tied = gm._estimate_gaussian_covariances_tied(resp, X, nk, xk, 0)
-            covars_pred_tied_diag = gm._estimate_gaussian_covariances_tied_diag(resp, X, nk, xk, 0)
+            covars_pred_tied = gm._estimate_gaussian_covariances_tied(
+                resp, X, nk, xk, 0
+            )
+            covars_pred_tied_diag = gm._estimate_gaussian_covariances_tied_diag(
+                resp, X, nk, xk, 0
+            )
 
             ecov = EmpiricalCovariance()
             ecov.covariance_ = np.diag(np.diag(covars_pred_tied))
@@ -449,7 +461,9 @@ def test_suffstat_sk(global_dtype):
             assert_almost_equal(ecov.error_norm(cov_tied_diag, norm="spectral"), 0)
 
             # check the precision computation
-            precs_chol_pred = _compute_precision_cholesky(covars_pred_tied_diag, "tied-diag")
+            precs_chol_pred = _compute_precision_cholesky(
+                covars_pred_tied_diag, "tied-diag"
+            )
             assert_almost_equal(covars_pred_tied_diag, 1.0 / precs_chol_pred**2)
 
         elif covar_type == "spherical":
@@ -463,7 +477,9 @@ def test_suffstat_sk(global_dtype):
             resp = np.ones((n_samples, 1), dtype=global_dtype)
             nk = np.array([n_samples], dtype=global_dtype)
             xk = X.mean()
-            covars_pred_spherical = gm._estimate_gaussian_covariances_spherical(resp, X, nk, xk, 0)
+            covars_pred_spherical = gm._estimate_gaussian_covariances_spherical(
+                resp, X, nk, xk, 0
+            )
             covars_pred_spherical2 = np.dot(X.flatten().T, X.flatten()) / (
                 n_features * n_samples
             )
@@ -471,7 +487,9 @@ def test_suffstat_sk(global_dtype):
             assert covars_pred_spherical.dtype == global_dtype
 
             # check the precision computation
-            precs_chol_pred = _compute_precision_cholesky(covars_pred_spherical, "spherical")
+            precs_chol_pred = _compute_precision_cholesky(
+                covars_pred_spherical, "spherical"
+            )
             assert_almost_equal(covars_pred_spherical, 1.0 / precs_chol_pred**2)
             assert precs_chol_pred.dtype == global_dtype
 
@@ -486,8 +504,8 @@ def test_suffstat_sk(global_dtype):
             resp = np.ones((n_samples, 1), dtype=global_dtype)
             nk = np.array([n_samples], dtype=global_dtype)
             xk = X.mean()
-            covars_pred_tied_spherical = gm._estimate_gaussian_covariances_tied_spherical(
-                resp, X, nk, xk, 0
+            covars_pred_tied_spherical = (
+                gm._estimate_gaussian_covariances_tied_spherical(resp, X, nk, xk, 0)
             )
             covars_pred_tied_spherical2 = np.dot(X.flatten().T, X.flatten()) / (
                 n_features * n_samples
@@ -496,7 +514,9 @@ def test_suffstat_sk(global_dtype):
             assert covars_pred_tied_spherical.dtype == global_dtype
 
             # check the precision computation
-            precs_chol_pred = _compute_precision_cholesky(covars_pred_tied_spherical, "tied-spherical")
+            precs_chol_pred = _compute_precision_cholesky(
+                covars_pred_tied_spherical, "tied-spherical"
+            )
             assert_almost_equal(covars_pred_tied_spherical, 1.0 / precs_chol_pred**2)
             assert precs_chol_pred.dtype == global_dtype
 
@@ -542,7 +562,7 @@ def test_gaussian_mixture_log_probabilities():
     # test against with _naive_lmvnpdf_diag
     rng = np.random.RandomState(0)
     rand_data = RandomData(rng)
-    n_samples = 5#00
+    n_samples = 5  # 00
     n_features = rand_data.n_features
     n_components = rand_data.n_components
 
@@ -571,8 +591,12 @@ def test_gaussian_mixture_log_probabilities():
         elif covar_type == "tied-diag":
             covars_tied_diag = rng.rand(n_features)
             precs_chol_tied_diag = 1.0 / np.sqrt(covars_tied_diag)
-            log_prob_naive = _naive_lmvnpdf_diag(X, means, [covars_tied_diag] * n_components)
-            log_prob = _estimate_log_gaussian_prob(X, means, precs_chol_tied_diag, "tied-diag")
+            log_prob_naive = _naive_lmvnpdf_diag(
+                X, means, [covars_tied_diag] * n_components
+            )
+            log_prob = _estimate_log_gaussian_prob(
+                X, means, precs_chol_tied_diag, "tied-diag"
+            )
             assert_array_almost_equal(log_prob, log_prob_naive)
         elif covar_type == "spherical":
             covars_spherical = rng.rand(n_components)
@@ -580,13 +604,19 @@ def test_gaussian_mixture_log_probabilities():
             log_prob_naive = _naive_lmvnpdf_diag(
                 X, means, [[k] * n_features for k in covars_spherical]
             )
-            log_prob = _estimate_log_gaussian_prob(X, means, precs_spherical, "spherical")
+            log_prob = _estimate_log_gaussian_prob(
+                X, means, precs_spherical, "spherical"
+            )
             assert_array_almost_equal(log_prob, log_prob_naive)
         elif covar_type == "tied-spherical":
             covars_tied_spherical = rng.rand(1)
             precs_tied_spherical = 1.0 / np.sqrt(covars_tied_spherical)
-            log_prob_naive = _naive_lmvnpdf_diag(X, means, [covars_tied_spherical] * n_components)
-            log_prob = _estimate_log_gaussian_prob(X, means, precs_tied_spherical, "tied-spherical")
+            log_prob_naive = _naive_lmvnpdf_diag(
+                X, means, [covars_tied_spherical] * n_components
+            )
+            log_prob = _estimate_log_gaussian_prob(
+                X, means, precs_tied_spherical, "tied-spherical"
+            )
             assert_array_almost_equal(log_prob, log_prob_naive)
 
 
@@ -740,11 +770,10 @@ def test_gaussian_mixture_fit(global_dtype):
                 [np.eye(n_features) * c for c in rand_data.precisions["spherical"]]
             )
         elif covar_type == "tied-spherical":
-            prec_pred = np.array(
-                [np.eye(n_features) * g.precisions_] * n_components
-            )
+            prec_pred = np.array([np.eye(n_features) * g.precisions_] * n_components)
             prec_test = np.array(
-                [np.eye(n_features) * rand_data.precisions["tied-spherical"]] * n_components
+                [np.eye(n_features) * rand_data.precisions["tied-spherical"]]
+                * n_components
             )
         elif covar_type == "diag":
             prec_pred = np.array([np.diag(d) for d in g.precisions_])
@@ -854,8 +883,12 @@ def test_gaussian_mixture_n_parameters():
     n_samples, n_features, n_components = 50, 5, 2
     X = rng.randn(n_samples, n_features)
     n_params = {
-        "tied-spherical": 12, "spherical": 13, "tied-diag": 16, "diag": 21,
-        "tied": 26, "full": 41
+        "tied-spherical": 12,
+        "spherical": 13,
+        "tied-diag": 16,
+        "diag": 21,
+        "tied": 26,
+        "full": 41,
     }
     for cv_type in COVARIANCE_TYPE:
         g = GaussianMixture(
@@ -1592,9 +1625,10 @@ def test_gaussian_mixture_all_init_does_not_estimate_gaussian_parameters(
 
 
 @pytest.mark.parametrize("init_params", ["random", "random_from_data"])
-@pytest.mark.parametrize("covariance_type", [
-    "full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"
-])
+@pytest.mark.parametrize(
+    "covariance_type",
+    ["full", "tied", "diag", "tied-diag", "spherical", "tied-spherical"],
+)
 @pytest.mark.parametrize(
     "array_namespace, device_name, dtype_name",
     yield_namespace_device_dtype_combinations(),
