@@ -256,8 +256,8 @@ def _estimate_gaussian_covariances_diag(resp, X, nk, means, reg_covar, xp=None):
     avg_X2 = (resp.T @ (X * X)) / nk[:, xp.newaxis]
     avg_means2 = means**2
     covariance = avg_X2 - avg_means2
-    covariance = np.where(  # ignore float errors
-        np.abs(covariance) < 2 * xp.finfo(X.dtype).eps, 0, covariance
+    covariance = xp.where(  # ignore float errors
+        xp.abs(covariance) < 2 * xp.finfo(X.dtype).eps, 0, covariance
     )
     return covariance + reg_covar
 
@@ -341,15 +341,9 @@ def _estimate_gaussian_covariances_tied_spherical(
         The variance value of the components.
     """
     xp, _ = get_namespace(X)
-    return xp.array(
-        [
-            xp.mean(
-                _estimate_gaussian_covariances_tied_diag(
-                    resp, X, nk, means, reg_covar, xp=xp
-                ),
-                axis=0,
-            )
-        ]
+    return xp.mean(
+        _estimate_gaussian_covariances_tied_diag(resp, X, nk, means, reg_covar, xp=xp),
+        axis=0,
     )
 
 
@@ -640,8 +634,8 @@ def _estimate_log_gaussian_prob(X, means, precisions_chol, covariance_type, xp=N
         precisions = precisions_chol**2
         log_prob = (
             xp.sum((means**2 * precisions), axis=1)[None, :]
-            - 2.0 * (X @ (means * precisions).T)
-            + (X**2 @ precisions.T)[:, None]
+            - 2.0 * (X @ xp.reshape(means * precisions, (means.shape[0], -1)).T)
+            + xp.sum(X**2 * precisions, axis=1)[:, None]
         )
 
     elif covariance_type == "spherical":
