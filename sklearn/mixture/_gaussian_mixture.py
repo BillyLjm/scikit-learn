@@ -451,9 +451,11 @@ def _compute_precision_cholesky(covariances, covariance_type, xp=None):
             cov_chol, xp.eye(n_features, dtype=dtype, device=device_), xp
         ).T
     else:
-        if xp.any(covariances <= 0.0):
+        if xp.any(covariances <= xp.asarray(0.0, dtype=dtype, device=device_)):
             raise ValueError(estimate_precision_error_message)
-        precisions_chol = 1.0 / xp.sqrt(covariances)
+        precisions_chol = xp.asarray(
+            1.0 / xp.sqrt(covariances), dtype=dtype, device=device_
+        )
     return precisions_chol
 
 
@@ -1066,7 +1068,11 @@ class GaussianMixture(BaseMixture):
             self.precisions_ = self.precisions_cholesky_ @ self.precisions_cholesky_.T
 
         else:
-            self.precisions_ = self.precisions_cholesky_**2
+            self.precisions_ = xp.asarray(
+                self.precisions_cholesky_**2,
+                dtype=self.precisions_cholesky_.dtype,
+                device=device_,
+            )
 
     def _n_parameters(self):
         """Return the number of free parameters in the model."""
